@@ -1,0 +1,98 @@
+name: Playwright Test & AI-Powered Failure Triage
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  test-and-triage:
+    name: Run Playwright Tests & AI RCA Triage
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium Browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Setup Ollama (Local AI Provider)
+        run: |
+          echo "Installing Ollama for autonomous local triage..."
+          curl -fsSL https://ollama.com/install.sh | sh
+          ollama serve &
+          sleep 5
+          # Pull a lightweight model for fast CI execution
+          ollama pull qwen2.5:0.5b || ollama pull llama3.2:1b || true
+        env:
+          OLLAMA_HOST: "127.0.0.1:11434"
+
+      - name: Execute Deterministic Playwright Suites
+        id: playwright-tests
+        run: npm run test
+        continue-on-error: true
+        env:
+          CI: true
+
+      - name: Execute AI Root Cause Analysis (RCA) Pipeline
+        id: rca-triage
+        run: npm run rca
+        env:
+          LLM_PROVIDER: ollama
+          OLLAMA_BASE_URL: "http://127.0.0.1:11434"
+          OLLAMA_MODEL: "qwen2.5:0.5b"
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Test Results & Trace Artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-test-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 14
+
+      - name: Comment RCA Report on Pull Request
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request' && failure()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = 'test-results/rca-summary.md';
+            if (fs.existsSync(path)) {
+              const body = fs.readFileSync(path, 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
+
+      - name: Verify Suite Health
+        if: steps.playwright-tests.outcome == 'failure'
+        run: |
+          echo "Playwright tests experienced failures. Please review the AI RCA summary above."
+          exit 1

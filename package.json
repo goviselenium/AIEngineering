@@ -1,0 +1,37 @@
+{
+  "name": "agentic-quality-engineering",
+  "version": "1.0.0",
+  "description": "Agentic Quality Engineering Platform combining Playwright, MCP, and AI-Powered Failure RCA",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:triage": "playwright test; npm run rca",
+    "rca": "tsx scripts/run-rca.ts",
+    "mcp:server": "tsx scripts/start-mcp-server.ts",
+    "build": "tsc"
+  },
+  "keywords": [
+    "playwright",
+    "quality-engineering",
+    "agentic-ai",
+    "mcp",
+    "model-context-protocol",
+    "sdet",
+    "failure-analysis"
+  ],
+  "author": "Quality Engineering Team",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.1.0",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.1"
+  }
+}
