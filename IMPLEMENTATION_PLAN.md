@@ -1,7 +1,7 @@
 # Implementation Plan: Agentic Quality Engineering & MCP-Driven Test Automation Framework
 
 **Reference Document:** *Beyond Selenium and Playwright: How AI, MCP, and Agentic Testing Are Redefining Quality Engineering*  
-**Author / Lead Rationale:** Chanchal T. (Senior SDET | Quality Engineering Lead)  
+**Author / Lead Rationale:** Govinda Rao SK (Senior SDET | Quality Engineering Lead)  
 **Target Milestone:** Transition from Script-Based Execution (Phase 2/3) to Intelligent, Agentic Quality Engineering (Phase 5)
 
 ---
